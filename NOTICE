@@ -1,6 +1,6 @@
 RoboUse-RL derives from Agent-as-Policy, Apache-2.0 (see LICENSE).
 Selected data converters, tool codec, official reward reader, checkpoint contracts,
-JavaScript sandbox, selected teacher quota/loopback/local-journal helpers,
+JavaScript sandbox, selected teacher quota/loopback/local-journal and prestart RPC classifier helpers,
 and a byte-pinned snapshot of robodojo/AGP are included.
 The native AGP source snapshot is unchanged; its SHA256 inventory is in
 robouse/_native/agp-source-manifest.json. No account credentials are included.

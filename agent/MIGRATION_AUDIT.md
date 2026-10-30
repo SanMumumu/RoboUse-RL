@@ -27,3 +27,7 @@ Adopted explicit module responsibilities, model-independent loader outputs, conf
 ## Exclusions
 
 No active rollout tree, mixed Seed0/1 cache, Seed1-trained initialization, model weights, raw datasets, source-project `.git`, private logs/account state, GPU leases, entire ThirdGIT checkout or old videos are copied into the public commit. Existing source and experiments remain recoverable. Public synthetic fixtures are marked synthetic and carry no native success claim.
+
+## Collection follow-up audit
+
+Read-only review additionally covered the research `runtime_v14/rpc_policy.py`, bounded Admission wrapper, failure recorder and independent v20 Guardian. The credential-free classifier and subprocess fixture were reused directly; host-bound paths, account ordering, proxy functions, state paths, leases and live progress were not copied. The public wrapper preserves prior/identity/write checks, the three-attempt bound and no episode replay. Guardian, failure spool, native/processor observer and A800↔RTX service are portable additions around existing collection/HTTP/transfer primitives. The running source collector was not imported, patched, restarted or sampled by this work. Source-reported rollout progress is not a release experiment result.

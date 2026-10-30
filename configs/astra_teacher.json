@@ -34,5 +34,9 @@
     }
   ],
   "max_concurrency": 1,
-  "account_lock_file": "/path/to/shared-account-locks/selected-account.lock"
+  "account_lock_file": "/path/to/shared-account-locks/selected-account.lock",
+  "metadata_max_attempts": 3,
+  "guardian_max_starts": 4,
+  "renderer_mode": "rtx",
+  "excluded_identity_files": []
 }

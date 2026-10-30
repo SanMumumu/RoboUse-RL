@@ -44,7 +44,18 @@ def make_server(config, adapter=None):
                 payload = json.dumps(
                     adapter.handle(json.loads(self.rfile.read(size)))
                 ).encode()
-            except Exception:
+            except Exception as exc:
+                if hasattr(adapter, "public_error"):
+                    with (logs / "http-errors.log").open("a") as stream:
+                        traceback.print_exc(file=stream)
+                    status, error = adapter.public_error(exc)
+                    payload = json.dumps(error).encode()
+                    self.send_response(status)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+                    return
                 self.send_error(500)
                 raise
             self.send_response(200)

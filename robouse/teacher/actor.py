@@ -146,7 +146,7 @@ def run(job_path, session):
     from agp_rl.io import sha256
 
     job = json.loads(job_path.read_text())
-    config = job["teacher"]
+    config = {**job["teacher"], "workspace": str(session)}
     verify_sources()
     if job.get("actor_kind") != "astra_teacher" or not job.get("teacher_reservation"):
         raise FrontierBlocked("EXPLICIT_TEACHER_RESERVATION_REQUIRED")
@@ -169,6 +169,7 @@ def run(job_path, session):
         job_path.parent / "private-teacher",
         minimum_lifetime=config["episode_wall_seconds"] + 90,
     )
+    runner.last_verified_metadata = record.get("scheduler_admission")
     runtime = source_root() / "agp_runtime"
     sys.path[:0] = [str(runtime), str(runtime / "source/agent")]
     from agp_core import features, task_notes
@@ -302,31 +303,22 @@ def run(job_path, session):
             raise FrontierBlocked(
                 "TEACHER_DEADLINE_EXPIRED_AFTER_ADMISSION_NO_MODEL_START"
             )
-        # Persist intent before Popen; interruption never looks like free replay.
-        write_json(
-            session / "model-process-start-intent.json",
-            {
-                "model": config["model"],
-                "effort": config["effort"],
-                "episode_id": job["episode_id"],
-                "created_at": time.time(),
-            },
-        )
         with (session / "agent_events.jsonl").open("x") as out, (
             session / "agent_stderr.log"
         ).open("x") as err:
-            process = subprocess.Popen(
-                runner.command(
-                    args,
-                    session=session,
-                    private_roots=[job_path.parent / "evaluator_private"],
-                ),
-                env=isolated_environment(runner.profile),
-                stdin=subprocess.PIPE,
-                stdout=out,
-                stderr=err,
-                text=True,
-            )
+            from contextlib import nullcontext
+            from robouse.teacher.state import file_lock
+
+            start_lock = file_lock(Path(config["failure_root"]) / "model-start.lock", wait_seconds=30) if config.get("failure_root") else nullcontext()
+            with start_lock:
+                runner.assert_model_admission_open()
+                # Serialize model-start intent/Popen with global denial publication.
+                write_json(session / "model-process-start-intent.json", {"model": config["model"], "effort": config["effort"], "episode_id": job["episode_id"], "created_at": time.time()})
+                process = subprocess.Popen(
+                    runner.command(args, session=session, private_roots=[job_path.parent / "evaluator_private"]),
+                    env=isolated_environment(runner.profile), stdin=subprocess.PIPE,
+                    stdout=out, stderr=err, text=True,
+                )
             process.stdin.write(prompt)
             process.stdin.close()
             (session / "agent.pid").write_text(str(process.pid))

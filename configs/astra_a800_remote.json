@@ -1,0 +1,12 @@
+{
+  "endpoint": "http://127.0.0.1:8766",
+  "campaign_id": "astra-high-seed0-v1",
+  "plan_sha256": "REVIEWED_REMOTE_PLAN_SHA256",
+  "output": "/path/to/a800-runs/astra-high-seed0-v1",
+  "data_root": "/path/to/a800-data/astra-high-seed0-v1",
+  "max_episodes": 2100,
+  "max_wall_seconds": 604800,
+  "pull_data": true,
+  "rpc_timeout": 120,
+  "poll_seconds": 5
+}
