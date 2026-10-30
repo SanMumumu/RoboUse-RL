@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use RoboUse-RL, please cite this software."
+title: "RoboUse-RL: A Modular Framework for Training Tool-Using Robotic Agents"
+type: software
+authors:
+  - name: RoboUse-RL contributors
+version: 0.1.0
+license: Apache-2.0
+repository-code: https://github.com/SanMumumu/RoboUse-RL
+url: https://github.com/SanMumumu/RoboUse-RL
+date-released: '2026-10-30'

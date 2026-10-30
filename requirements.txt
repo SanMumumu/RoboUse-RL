@@ -1,0 +1,6 @@
+Pillow==11.2.1
+PyYAML==6.0.2
+numpy==2.2.6
+tqdm==4.67.1
+jsonschema==4.26.0
+pydantic==2.12.5

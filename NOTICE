@@ -1,0 +1,15 @@
+RoboUse-RL derives from Agent-as-Policy, Apache-2.0 (see LICENSE).
+Selected data converters, tool codec, official reward reader, checkpoint contracts,
+JavaScript sandbox, selected teacher quota/loopback/local-journal helpers,
+and a byte-pinned snapshot of robodojo/AGP are included.
+The native AGP source snapshot is unchanged; its SHA256 inventory is in
+robouse/_native/agp-source-manifest.json. No account credentials are included.
+
+Copyright (c) ModelScope Contributors. All rights reserved.
+Selected MultiTurnScheduler/RolloutScheduler classes, inference protocol and
+remove_response from ms-swift 4.2.1 are included under Apache-2.0 in robouse/_vendor.
+Only dependency imports/type aliases are decoupled from vLLM; see provenance.json.
+The lifecycle follows Guava's explicit generated-token/mask scheduler approach.
+AgenticRoboRL and ResearchBoost-Agent were consulted, not vendored.
+
+Datasets, weights, environments, account state, recordings and run logs are not included.

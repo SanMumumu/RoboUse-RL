@@ -1,0 +1,38 @@
+{
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "service_tier": "default",
+  "cli_binary": "/path/to/pinned/codex",
+  "cli_sha256": "ACTUAL_CLI_SHA256",
+  "cli_version": "codex-cli ACTUAL_VERSION",
+  "bwrap_binary": "/path/to/pinned/bwrap",
+  "bwrap_sha256": "ACTUAL_BWRAP_SHA256",
+  "identities": "/path/to/frozen/seed0-identities.jsonl",
+  "dataset_version": "astra-teacher-seedroles-v1",
+  "data_root": "/path/to/new-astra-data",
+  "output": "/path/to/runs/astra-teacher",
+  "max_episodes": 0,
+  "max_wall_seconds": 86400,
+  "episode_wall_seconds": 14400,
+  "max_extra_cost_usd": 0,
+  "paid_credits_authorized": false,
+  "automatic_retries": 0,
+  "local_control_journal": true,
+  "private_runtime_dir": "/run/user/USER_ID",
+  "workers": [
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 0,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx.json",
+        "sha256": "ACTUAL_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-0.lock"
+    }
+  ],
+  "max_concurrency": 1,
+  "account_lock_file": "/path/to/shared-account-locks/selected-account.lock"
+}
