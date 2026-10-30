@@ -15,6 +15,10 @@ def main():
         "action",
         choices=[
             "collect_astra",
+            "collect_guardian",
+            "teacher_service",
+            "collect_remote",
+            "observe_teacher",
             "train_sft",
             "train_rl",
             "evaluate",
@@ -50,6 +54,16 @@ def main():
     p.add_argument("--max-episodes", type=int)
     p.add_argument("--max-wall-seconds", type=int)
     p.add_argument("--episode-wall-seconds", type=int)
+    p.add_argument("--target-valid-scores", type=int)
+    p.add_argument("--endpoint")
+    p.add_argument("--campaign-id")
+    p.add_argument("--plan-sha256")
+    p.add_argument("--processor-model")
+    p.add_argument("--processor-revision")
+    p.add_argument("--tool-schema")
+    p.add_argument("--full-verify", action="store_true")
+    p.add_argument("--watch", action="store_true")
+    p.add_argument("--stop-remote", action="store_true")
     for name in (
         "train-data",
         "val-data",
@@ -126,10 +140,10 @@ def main():
     cfg.setdefault(
         "model",
         "gpt-6-astra"
-        if a.action == "collect_astra"
+        if a.action in ("collect_astra", "collect_guardian")
         else os.environ.get("MODEL_ROOT", "Qwen/Qwen3.5-4B"),
     )
-    if a.action == "collect_astra":
+    if a.action in ("collect_astra", "collect_guardian"):
         for key, value in {
             "effort": "high",
             "service_tier": "default",
@@ -170,7 +184,27 @@ def main():
             )
         )
         return
-    if a.action == "collect_astra":
+    if a.action == "collect_guardian":
+        from robouse.teacher.guardian import supervise
+        from robouse.teacher.state import validate, excluded_identities
+
+        identities = validate(cfg, final_test=a.final_test)
+        excluded_identities(cfg, identities)
+        print(json.dumps(supervise(cfg)))
+    elif a.action == "teacher_service":
+        from robouse.teacher.service import serve
+
+        serve(cfg)
+    elif a.action == "collect_remote":
+        from robouse.teacher.remote import run
+
+        print(json.dumps(run(cfg)))
+    elif a.action == "observe_teacher":
+        from robouse.teacher.observer import observe, watch
+
+        result = watch(cfg) if cfg.get("watch") else observe(cfg)
+        print(json.dumps({k: v for k, v in result.items() if k != "verified_indexes"}))
+    elif a.action == "collect_astra":
         if cfg.get("snapshot_only"):
             if cfg.get("seed") == 2 and not a.final_test:
                 p.error("Seed2 snapshot requires --final-test")
@@ -305,6 +339,8 @@ def main():
                     for pattern in (
                         "*state.json",
                         "teacher-progress.json",
+                        "teacher-acceptance.json",
+                        "remote-status.json",
                         "progress.json",
                         "training-complete.json",
                     )

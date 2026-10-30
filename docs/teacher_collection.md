@@ -35,3 +35,5 @@ bash scripts/collect_astra.sh --snapshot-only --seed 1 \
 ```
 
 Add this as a `kind: native` source in the preparation config with `sealed_manifest` and `sealed_manifest_sha256`. Only Seed0 enters SFT/RL. Seed1 teacher samples are val NLL only; Seed2 collection/snapshot requires `--final-test` and never feeds training or correction. Old teacher results are never relabeled as a new run or student results.
+
+For a persistent independent Guardian, bounded same-attempt Admission checks, automatic failure journal, observer and A800 control/verified data pull, see [A800 collection deployment](collection_a800.md). These paths do not attach to an existing research collector.

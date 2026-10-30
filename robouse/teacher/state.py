@@ -51,6 +51,12 @@ def validate(config, *, final_test=False):
         raise FrontierBlocked("NATIVE_EPISODE_WALL_CAP_EXCEEDED")
     if config.get("automatic_retries", 0) != 0:
         raise FrontierBlocked("NO_UNBUDGETED_AUTOMATIC_TEACHER_RETRIES")
+    target = config.get("target_valid_scores")
+    if target is not None and (type(target) is not int or target < 1 or target > config["max_episodes"]):
+        raise FrontierBlocked("VALID_SCORE_TARGET_REQUIRES_EXPLICIT_SUFFICIENT_ATTEMPT_BUDGET")
+    attempts = config.get("metadata_max_attempts", 3)
+    if type(attempts) is not int or not 1 <= attempts <= 3:
+        raise FrontierBlocked("METADATA_ATTEMPT_LIMIT_MUST_BE_1_TO_3")
     if len({str(w["renderer_gpu"]) for w in config["workers"]}) != len(
         config["workers"]
     ):
@@ -85,6 +91,24 @@ def validate(config, *, final_test=False):
     return identities
 
 
+def excluded_identities(config, identities=()):
+    """Frozen metadata-only tombstones prevent replay of sealed successes/failures."""
+    keys = set()
+    ownership = []
+    def record(row):
+        return {**row, "identity_id": f"{row['task']}/seed-{row['seed']}/layout-{row['layout']:03d}", "role": role(row["seed"]), "layout_hash": row.get("layout_hash", row.get("layout_sha256"))}
+    for reference in config.get("excluded_identity_files", []):
+        if sha256(reference["path"]) != reference["sha256"]:
+            raise FrontierBlocked("FROZEN_EXCLUDED_IDENTITY_MANIFEST_CHANGED")
+        for row in read_jsonl(reference["path"]):
+            if any(name in row for name in ("messages", "targets", "assistant", "decisions")):
+                raise FrontierBlocked("EXCLUSION_MANIFEST_MUST_CONTAIN_IDENTITIES_ONLY")
+            keys.add((row["task"], row["seed"], row["layout"]))
+            ownership.append(record(row))
+    check_roles(ownership + [record(row) for row in identities])
+    return keys
+
+
 class Budget:
     def __init__(self, config, identities, *, resume=False):
         self.config = config
@@ -107,6 +131,10 @@ class Budget:
         options.update(
             {k: config[k] for k in ("cli_sha256", "cli_version", "bwrap_sha256")}
         )
+        options.update(target_valid_scores=config.get("target_valid_scores"), metadata_max_attempts=config.get("metadata_max_attempts", 3))
+        options["selected_account_sha256"] = os.environ.get("ASTRA_ACCOUNT_SHA256")
+        options["admission_options"] = {key: config.get(key) for key in ("metadata_timeout_s", "admission_max_age_s", "retry_prior_max_age_s")}
+        options["excluded_identity_files"] = config.get("excluded_identity_files", [])
         options["teacher_code_sha256"] = digest(
             {p.name: sha256(p) for p in sorted(Path(__file__).parent.glob("*.py"))}
         )
@@ -126,6 +154,7 @@ class Budget:
                 "deadline": time.time() + config["max_wall_seconds"],
                 "reserved": {},
                 "terminal": {},
+                "lane_holds": {},
                 "status": "READY",
             }
             write_json(self.path, self.value)

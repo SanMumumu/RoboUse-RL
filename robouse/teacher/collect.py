@@ -12,7 +12,7 @@ from robouse.environments.robodojo.native_job import verify_sources
 from robouse.environments.robodojo.worker import NativeWorker
 from robouse.teacher.admission import FrontierBlocked
 from robouse.teacher.provider import IsolatedCodex
-from robouse.teacher.state import Budget, file_lock, resource_admission, validate
+from robouse.teacher.state import Budget, file_lock, resource_admission, validate, excluded_identities
 from robouse.teacher.seal import seal, snapshot, immutable_json
 
 
@@ -33,14 +33,31 @@ def worker_idle(config):
     )
     if result.stdout.strip():
         raise FrontierBlocked("RTX_HAS_EXISTING_COMPUTE_JOB_NO_PREEMPTION")
+    result = subprocess.run(["nvidia-smi", "-i", str(config["renderer_gpu"]), "--query-gpu=uuid,name", "--format=csv,noheader"], capture_output=True, text=True, check=True, timeout=10)
+    uuid, name = result.stdout.strip().split(",", 1)
+    from robouse.teacher.placement import verify_renderer
+
+    verify_renderer(config, {"uuid": uuid.strip(), "name": name.strip()})
 
 
 def run(config, *, resume=False, final_test=False, check_only=False):
     root = Path(config["output"]).resolve()
     identities = [] if check_only else validate(config, final_test=final_test)
+    excluded = set() if check_only else excluded_identities(config, identities)
     root.mkdir(parents=True, exist_ok=True)
     with ExitStack() as stack:
         stack.enter_context(file_lock(root / "teacher-controller.lock"))
+        from robouse.teacher.ownership import receipt
+
+        controller_owner = receipt()
+        previous_owner = root / "teacher-controller-owner.json"
+        if previous_owner.exists() and json.loads(previous_owner.read_text()).get("host_sha256") != controller_owner["host_sha256"]:
+            raise FrontierBlocked("FROZEN_COLLECTION_EXECUTION_HOST_CHANGED_USE_NEW_RUN")
+        previous_exit = root / "teacher-controller-exit.json"
+        if previous_exit.exists():
+            previous_exit.rename(root / f"teacher-controller-exit-{time.time_ns()}.json")
+        write_json(root / "teacher-controller-owner.json", controller_owner)
+        stack.callback(write_json, root / "teacher-controller-exit.json", {"owner": controller_owner, "returned": True})
         if check_only:
             runner = IsolatedCodex(
                 config, root / ("metadata-check-" + str(time.time_ns()))
@@ -121,7 +138,10 @@ def run(config, *, resume=False, final_test=False, check_only=False):
             cfg["teacher"].update(
                 local_control_journal=config.get("local_control_journal", True),
                 private_runtime_dir=config.get("private_runtime_dir"),
+                failure_root=str(root),
+                metadata_max_attempts=config.get("metadata_max_attempts", 3),
             )
+            cfg["teacher"].update({key: config[key] for key in ("metadata_timeout_s", "admission_max_age_s", "retry_prior_max_age_s") if key in config})
             workers.append(NativeWorker(cfg))
         if not workers:
             raise FrontierBlocked("EXPLICIT_RTX_WORKERS_REQUIRED")
@@ -149,11 +169,12 @@ def run(config, *, resume=False, final_test=False, check_only=False):
                     )
                     # Fresh non-generative quota check before allocating Isaac.
                     runner = IsolatedCodex(
-                        config,
+                        {**config, "failure_root": str(root)},
                         root / "admission" / reservation["episode_id"],
                         minimum_lifetime=config["episode_wall_seconds"] + 90,
                     )
-                    runner.metadata("scheduler")
+                    scheduler_admission = runner.metadata("scheduler")
+                    reservation["scheduler_admission"] = scheduler_admission
                     reservation_path = (
                         root / "reservations" / (reservation["episode_id"] + ".json")
                     )
@@ -193,14 +214,21 @@ def run(config, *, resume=False, final_test=False, check_only=False):
         concurrency = config.get("max_concurrency", 1)
         if type(concurrency) is not int or not 1 <= concurrency <= len(workers):
             raise FrontierBlocked("BOUNDED_ACCOUNT_CONCURRENCY_REQUIRED")
-        pending = list(identities)
+        pending = [identity for identity in identities if (identity["task"], identity["seed"], identity["layout"]) not in excluded]
         futures = {}
-        free = list(range(concurrency))
+        held_lanes = budget.value.setdefault("lane_holds", {})
+        free = [number for number in range(concurrency) if str(number) not in held_lanes]
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             while pending or futures:
+                if (root / "RAW_INTEGRITY_HOLD.json").exists():
+                    pending = []
                 if (root / "STOP").exists():
                     pending = []
                 while pending and free:
+                    target = config.get("target_valid_scores")
+                    if target and sum(t.get("valid_score", False) for t in budget.value["terminal"].values()) >= target:
+                        pending = []
+                        break
                     identity = pending.pop(0)
                     key = digest(identity)
                     if key in budget.value["terminal"]:
@@ -225,6 +253,9 @@ def run(config, *, resume=False, final_test=False, check_only=False):
                     try:
                         terminal = future.result()
                     except Exception as exc:
+                        from robouse.teacher.failures import emit
+
+                        emit(root, classification=str(exc) if isinstance(exc, FrontierBlocked) else type(exc).__name__, stage="controller", kind="HOLD")
                         terminal = {
                             "outcome": "infrastructure_error",
                             "valid_score": False,
@@ -235,14 +266,19 @@ def run(config, *, resume=False, final_test=False, check_only=False):
                             else "EXECUTION_OR_SEAL_FAILED",
                         }
                         if isinstance(exc, FrontierBlocked):
-                            pending = []
-                            write_json(
-                                root / "ADMISSION_CLOSED.json",
-                                {"reason": str(exc), "automatic_account_switch": False},
-                            )
+                            from robouse.teacher.recovery import lane_local_hold
+
+                            if lane_local_hold(exc):
+                                held_lanes[str(number)] = {"reason": str(exc), "episode_retries": 0, "new_dispatch": False}
+                            else:
+                                pending = []
+                                from robouse.teacher.recovery import close_admission
+
+                                close_admission(root, str(exc))
                         # Failed attempts are charged and terminal, never retried automatically.
                     budget.complete(identity, terminal)
-                    free.append(number)
+                    if str(number) not in held_lanes:
+                        free.append(number)
                     write_json(
                         root / "teacher-progress.json",
                         {
@@ -264,20 +300,28 @@ def run(config, *, resume=False, final_test=False, check_only=False):
             result.append(snapshot(data, seed, path))
         budget.value["requested_identities"] = len(identities)
         budget.value["not_started"] = sum(
-            digest(i) not in budget.value["reserved"] for i in identities
+            digest(i) not in budget.value["reserved"] and (i["task"], i["seed"], i["layout"]) not in excluded for i in identities
         )
+        budget.value["excluded_sealed_identities"] = sum((i["task"], i["seed"], i["layout"]) in excluded for i in identities)
         budget.value["valid_scores"] = sum(
             t.get("valid_score", False) for t in budget.value["terminal"].values()
         )
         budget.value["status"] = (
-            "ADMISSION_CLOSED"
+            "RAW_INTEGRITY_HOLD"
+            if (root / "RAW_INTEGRITY_HOLD.json").exists()
+            else "ADMISSION_CLOSED"
             if (root / "ADMISSION_CLOSED.json").exists()
             else "STOPPED"
             if (root / "STOP").exists()
+            else "LANES_HELD"
+            if held_lanes and budget.value["not_started"] and len(held_lanes) >= concurrency
             else "BUDGET_LIMITED"
             if budget.value["not_started"]
             else "FINISHED_BOUNDED"
         )
+        target = config.get("target_valid_scores")
+        if target and budget.value["status"] not in ("ADMISSION_CLOSED", "STOPPED", "RAW_INTEGRITY_HOLD", "LANES_HELD"):
+            budget.value["status"] = "TARGET_REACHED" if budget.value["valid_scores"] >= target else "IDENTITIES_EXHAUSTED_BELOW_TARGET" if not budget.value["not_started"] else "BUDGET_LIMITED"
         write_json(budget.path, budget.value)
         write_json(root / "snapshots.json", result)
         return budget.value

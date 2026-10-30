@@ -122,6 +122,18 @@ Outputs include `metrics.json`, `episodes.jsonl`, `run_manifest.json`, original 
 
 The isolated [Astra teacher integration](docs/teacher_collection.md) supports bounded collection, selected-account quota admission, resume, original RGB/transcript/video sealing and immutable data snapshots. Default effort is **high**, configurable with `--effort` or JSON; it is not hard-coded. It requires an external supported CLI and explicit authorization/resources. SFT has no dependency on that service. Actual teacher calls in this release are **NOT_RUN**.
 
+## Collection control on A800
+
+[A800 collection deployment](docs/collection_a800.md) adds a pinned authenticated teacher service, an independent Guardian, bounded prestart Admission recovery, run-local failure recording and a sealed-data mirror. The default placement runs control/storage on A800 and Isaac on remote RTX. A800-local rendering requires separate real native RGB acceptance; it is not inferred from CUDA availability.
+
+```bash
+# A800: inspect only; pin the returned remote plan before any collection launch.
+bash scripts/collect_remote.sh --config configs/astra_a800_remote.json \
+  --check-only --output /path/to/a800-runs/plan-review --execute
+```
+
+Metadata checks have at most three pre-model attempts. 401/403/429, permission/quota and unsafe identity/storage conditions close admission without blind retry. Sealed failed identities are never replayed; healthy lanes continue past a lane-local bootstrap fault. Guardian never calls a model, rotates accounts, recharges or starts training. The [failure guide](docs/SEED1_ROLLOUT_FAILURES.md) and observer distinguish native terminal, raw artifact integrity and processor acceptance. Real A800/RTX teacher operation and new-runtime acceptance remain **NOT_RUN** for this release.
+
 ## Feature maturity
 
 | Feature | Implementation | Validation |

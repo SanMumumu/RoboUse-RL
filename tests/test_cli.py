@@ -8,6 +8,10 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 NAMES = [
     "collect_astra",
+    "collect_guardian",
+    "teacher_service",
+    "collect_remote",
+    "observe_teacher",
     "prepare_data",
     "export_data",
     "import_data",

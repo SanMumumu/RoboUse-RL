@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import signal
 import subprocess
 import threading
@@ -121,6 +122,7 @@ class IsolatedCodex:
 
     def command(self, args, *, session=None, private_roots=()):
         if args[:1] == ["exec"]:
+            self.assert_model_admission_open()
             if not self.admitted or getattr(self, "model_command_issued", False):
                 raise FrontierBlocked("FRESH_SINGLE_USE_ADMISSION_REQUIRED_BEFORE_EXEC")
             self.model_command_issued = True
@@ -180,7 +182,20 @@ class IsolatedCodex:
         ]
         return cmd
 
+    def assert_model_admission_open(self):
+        root = self.config.get("failure_root")
+        if root and any((Path(root) / name).exists() for name in ("ADMISSION_CLOSED.json", "RAW_INTEGRITY_HOLD.json", "STOP")):
+            raise FrontierBlocked("GLOBAL_MODEL_ADMISSION_CLOSED")
+        proof = getattr(self, "admission_proof", None)
+        if proof and time.time() - proof["observed_at"] > self.config.get("admission_max_age_s", 60):
+            raise FrontierBlocked("STALE_ADMISSION_BEFORE_MODEL_PROCESS_START")
+
     def metadata(self, label):
+        from robouse.teacher.recovery import metadata_with_recovery
+
+        return metadata_with_recovery(self, self._metadata_once, label)
+
+    def _metadata_once(self, label):
         before = self.verify_identity()
         process = None
         try:
@@ -224,7 +239,29 @@ class IsolatedCodex:
                         raise FrontierBlocked("METADATA_PROCESS_ENDED")
                     if value.get("id") == number:
                         if "error" in value:
-                            raise FrontierBlocked("METADATA_RPC_REJECTED")
+                            from robouse.teacher.rpc_policy import rpc_fault
+
+                            error = value["error"] if isinstance(value["error"], dict) else {}
+                            details = error.get("data") if isinstance(error.get("data"), dict) else {}
+                            message = " ".join(str(value) for value in (error.get("message", ""), details.get("reason", ""), details.get("type", ""), details.get("code", ""))).lower()
+                            category = "UNKNOWN"
+                            for name, pattern in (
+                                ("PERMISSION", r"permission|forbidden|unauthori[sz]ed|unauthenticated|access denied"),
+                                ("QUOTA", r"quota|credits|rate.limit|usage.limit"),
+                                ("WORKSPACE_REQUIREMENTS", r"workspace.require|organization.require"),
+                                ("LOCAL_IO", r"read.only|disk.full|no.space|i/o|filesystem"),
+                                ("NETWORK", r"connection|network|proxy|timed.out|timeout|reset.by.peer"),
+                            ):
+                                if re.search(pattern, message):
+                                    category = name
+                                    break
+                            rpc_code = error.get("code") if type(error.get("code")) is int else "UNKNOWN"
+                            base = "METADATA_" + method.replace("/", "_") + "_RPC_ERROR_" + str(rpc_code) + "_" + category
+                            fault = rpc_fault(method, error, base)
+                            exc = FrontierBlocked(fault["classification"])
+                            for key in ("rpc_method", "rpc_code", "http_status"):
+                                setattr(exc, key, fault[key])
+                            raise exc
                         return value["result"]
 
             rpc(
@@ -256,6 +293,7 @@ class IsolatedCodex:
             self.verify_identity()
             proof = {
                 "account_sha256": before["account_sha256"],
+                "credential_file_sha256": before["credential_file_sha256"],
                 "observed_at": time.time(),
                 "remaining_percent": quota["remaining_percent"],
                 "quota": quota,
@@ -270,7 +308,9 @@ class IsolatedCodex:
             }
             write_json(self.directory / f"admission-{label}.json", proof)
             return proof
-        except (OSError, KeyError, TypeError, BrokenPipeError):
+        except ConnectionError:
+            raise FrontierBlocked("METADATA_TRANSPORT_FAILURE") from None
+        except (OSError, KeyError, TypeError):
             raise FrontierBlocked("METADATA_UNAVAILABLE_FAIL_CLOSED") from None
         finally:
             if process is not None:
@@ -285,8 +325,10 @@ class IsolatedCodex:
                 process.stdout.close()
 
     def admit(self, *, max_wall_seconds):
+        self.assert_model_admission_open()
         if (
-            self.config.get("model") != "gpt-6-astra"
+            not isinstance(self.config.get("model"), str)
+            or not self.config["model"].strip()
             or self.config.get("service_tier") != "default"
             or self.config.get("max_extra_cost_usd") != 0
             or self.config.get("paid_credits_authorized") is not False
@@ -301,5 +343,7 @@ class IsolatedCodex:
         ):
             raise FrontierBlocked("STALE_ADMISSION")
         self.admitted = True
+        self.admission_proof = proof
+        self.assert_model_admission_open()
         proof.update(launch_admitted=True, wall_admission_checked=True)
         return proof
