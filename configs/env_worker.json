@@ -1,0 +1,10 @@
+{
+  "output": "/path/to/rtx-runs/env-worker",
+  "benchmark": "/path/to/isolated/RoboDojo",
+  "simulator_python": "/path/to/isaac-env/bin/python",
+  "transport_python": "/path/to/mcp-env/bin/python",
+  "renderer_gpu": 0,
+  "max_decisions": 512,
+  "rpc_timeout": 1800,
+  "port": 8765
+}

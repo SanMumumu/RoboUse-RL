@@ -1,0 +1,126 @@
+{
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "service_tier": "default",
+  "cli_binary": "/path/to/pinned/codex",
+  "cli_sha256": "ACTUAL_CLI_SHA256",
+  "cli_version": "codex-cli ACTUAL_VERSION",
+  "bwrap_binary": "/path/to/pinned/bwrap",
+  "bwrap_sha256": "ACTUAL_BWRAP_SHA256",
+  "identities": "/path/to/frozen/seed0-identities.jsonl",
+  "dataset_version": "astra-teacher-seedroles-v1",
+  "data_root": "/path/to/new-astra-data",
+  "output": "/path/to/runs/astra-teacher",
+  "max_episodes": 0,
+  "max_wall_seconds": 86400,
+  "episode_wall_seconds": 14400,
+  "max_extra_cost_usd": 0,
+  "paid_credits_authorized": false,
+  "automatic_retries": 0,
+  "local_control_journal": true,
+  "private_runtime_dir": "/run/user/USER_ID",
+  "workers": [
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 0,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-0.json",
+        "sha256": "ACTUAL_GPU_0_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-0.lock"
+    },
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 1,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-1.json",
+        "sha256": "ACTUAL_GPU_1_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-1.lock"
+    },
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 2,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-2.json",
+        "sha256": "ACTUAL_GPU_2_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-2.lock"
+    },
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 3,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-3.json",
+        "sha256": "ACTUAL_GPU_3_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-3.lock"
+    },
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 4,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-4.json",
+        "sha256": "ACTUAL_GPU_4_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-4.lock"
+    },
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 5,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-5.json",
+        "sha256": "ACTUAL_GPU_5_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-5.lock"
+    },
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 6,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-6.json",
+        "sha256": "ACTUAL_GPU_6_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-6.lock"
+    },
+    {
+      "benchmark": "/path/to/isolated/RoboDojo",
+      "simulator_python": "/path/to/isaac-env/bin/python",
+      "transport_python": "/path/to/transport-env/bin/python",
+      "renderer_gpu": 7,
+      "resource_owner": "YOUR_ALLOCATION_ID",
+      "resource_lease": {
+        "path": "/path/to/allocated-rtx-7.json",
+        "sha256": "ACTUAL_GPU_7_LEASE_SHA256"
+      },
+      "resource_lock_file": "/path/to/shared-lease-locks/rtx-7.lock"
+    }
+  ],
+  "max_concurrency": 8,
+  "account_lock_file": "/path/to/shared-account-locks/selected-account.lock",
+  "metadata_max_attempts": 3,
+  "guardian_max_starts": 4,
+  "renderer_mode": "rtx",
+  "excluded_identity_files": []
+}

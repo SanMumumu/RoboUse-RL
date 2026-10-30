@@ -1,0 +1,11 @@
+{
+  "upstream": "modelscope/ms-swift",
+  "version": "4.2.1",
+  "license": "Apache-2.0",
+  "original_sha256": {
+    "infer_engine/protocol.py": "5b8de4e4640ede47332b455e7ea7c52b3ac795df153648e2fb4fee2187ce9956",
+    "rollout/multi_turn.py": "3c2874a6566f647303d714697e0805d13c9def40fb5503dec6331c84b0d77ff9",
+    "utils/utils.py": "ffd039aca2a04613f62a971675c731a2d4ddb44ff0bb6fa9e70a6040abdfaf41"
+  },
+  "changes": "Extract base scheduler classes and remove vLLM-only import coupling; protocol imports use local type aliases and the original remove_response utility."
+}

@@ -1,0 +1,8 @@
+include README.md LICENSE NOTICE CITATION.cff CONTRIBUTING.md requirements.txt requirements-*.in requirements-*.lock
+recursive-include configs *.json *.yaml
+recursive-include scripts *.py *.sh
+recursive-include docs *.md *.svg
+recursive-include examples *.py *.md *.json *.ppm
+recursive-include tests *.py
+recursive-exclude agent/evidence *
+global-exclude __pycache__ *.py[cod] *.mp4 *.safetensors *.pt .env

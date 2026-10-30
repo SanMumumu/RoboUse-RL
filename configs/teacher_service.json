@@ -1,0 +1,6 @@
+{
+  "teacher_config": "/path/to/private-rtx-teacher.json",
+  "output": "/path/to/runs/teacher-service",
+  "port": 8766,
+  "allow_final_test": false
+}
