@@ -1,0 +1,106 @@
+{
+  "schema_version": "robouse-rollout-v1",
+  "identity": {
+    "episode_id": "synthetic-seed0",
+    "attempt_id": "attempt-01",
+    "source_id": "public-synthetic-v1",
+    "task": "synthetic_observe",
+    "seed": 0,
+    "initial_state": "synthetic-layout-0",
+    "role": "train"
+  },
+  "decisions": [
+    {
+      "observation": {
+        "rgb": {
+          "65e198038377ccfab12cf7d1e4c473f82a0c04c33394c897bff0053c9e9b83a8": {
+            "path": "rgb-seed0.ppm",
+            "sha256": "65e198038377ccfab12cf7d1e4c473f82a0c04c33394c897bff0053c9e9b83a8",
+            "bytes": 8205,
+            "width": 32,
+            "height": 32
+          }
+        },
+        "instruction": "Observe the synthetic scene.",
+        "depth": {},
+        "feedback": {
+          "synthetic": true
+        }
+      },
+      "context": [
+        {
+          "role": "system",
+          "content": [
+            {
+              "type": "text",
+              "text": "Synthetic tool-use fixture. Return one tool call."
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Observe the synthetic scene."
+            },
+            {
+              "type": "image",
+              "image": "art-image://65e198038377ccfab12cf7d1e4c473f82a0c04c33394c897bff0053c9e9b83a8"
+            }
+          ]
+        }
+      ],
+      "assistant": "{\"name\":\"observe\",\"arguments\":{}}",
+      "tool_call": {
+        "name": "observe",
+        "arguments": {}
+      },
+      "tool_result": {
+        "isError": false,
+        "synthetic": true
+      },
+      "policy_version": "synthetic-untrained",
+      "input_history_complete": true,
+      "generation": null
+    },
+    {
+      "observation": {
+        "rgb": {
+          "65e198038377ccfab12cf7d1e4c473f82a0c04c33394c897bff0053c9e9b83a8": {
+            "path": "rgb-seed0.ppm",
+            "sha256": "65e198038377ccfab12cf7d1e4c473f82a0c04c33394c897bff0053c9e9b83a8",
+            "bytes": 8205,
+            "width": 32,
+            "height": 32
+          }
+        },
+        "instruction": "Observe the synthetic scene.",
+        "depth": {},
+        "feedback": {
+          "synthetic": true
+        }
+      },
+      "context": [],
+      "assistant": "{\"name\":\"observe\",\"arguments\":{}}",
+      "tool_call": {
+        "name": "observe",
+        "arguments": {}
+      },
+      "tool_result": {
+        "isError": false,
+        "synthetic": true
+      },
+      "policy_version": "synthetic-untrained",
+      "input_history_complete": false,
+      "generation": null
+    }
+  ],
+  "reward": null,
+  "success": null,
+  "terminated": false,
+  "truncated": true,
+  "termination_reason": "fixture_partial_history",
+  "origin": "synthetic_fixture",
+  "scope": "qualified_local_decisions"
+}

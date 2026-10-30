@@ -1,0 +1,30 @@
+{
+  "data_root": "/path/to/source-data",
+  "tool_schema": "audit/tool_schemas.source.json",
+  "identity_files": [
+    "identities/seed0-train.jsonl",
+    "identities/seed1-val.jsonl",
+    "identities/seed2-test.jsonl"
+  ],
+  "sources": [
+    {
+      "name": "public_seed0",
+      "kind": "public_art",
+      "seed": 0,
+      "root": "rollout_trajs/agp_official",
+      "art_root": "rollout_trajs/agent_trace_v1"
+    },
+    {
+      "name": "astra_seed1",
+      "kind": "native",
+      "seed": 1,
+      "root": "rollout_trajs/agp_astra_baseline_v1/seed-1",
+      "sealed_manifest": "snapshots/seed1-sealed.jsonl",
+      "sealed_manifest_sha256": "ACTUAL_SEALED_SNAPSHOT_SHA256"
+    }
+  ],
+  "processor_model": "/path/to/Qwen3.5-4B",
+  "processor_revision": "ACTUAL_MODEL_REVISION",
+  "max_context_tokens": 131072,
+  "max_new_tokens": 2048
+}

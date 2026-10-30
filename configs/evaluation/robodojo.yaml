@@ -1,0 +1,10 @@
+checkpoint: /path/to/frozen-checkpoint
+identities: /path/to/identities/seed1-val.jsonl
+env_urls:
+- http://127.0.0.1:8765
+greedy: true
+max_decisions: 512
+max_new_tokens: 2048
+max_context_tokens: 131072
+split: val
+seed: 0
